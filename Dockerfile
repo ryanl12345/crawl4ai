@@ -3,8 +3,6 @@ FROM python:3.10-slim
 # Set build arguments
 ARG APP_HOME=/app
 ARG INSTALL_TYPE=default
-ARG ENABLE_GPU=false
-ARG TARGETARCH
 
 # Environment variables
 ENV PYTHONFAULTHANDLER=1 \
@@ -30,7 +28,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright dependencies
+# Install Playwright dependencies (required by playwright>=1.49.0)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libnss3 \
@@ -55,15 +53,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libatspi2.0-0 \
     && rm -rf /var/lib/apt/lists/*
 
-# GPU support (optional, only for paid tiers with sufficient resources)
-RUN if [ "$ENABLE_GPU" = "true" ] && [ "$TARGETARCH" = "amd64" ]; then \
-    apt-get update && apt-get install -y --no-install-recommends \
-    nvidia-cuda-toolkit \
-    && rm -rf /var/lib/apt/lists/*; \
-else \
-    echo "Skipping NVIDIA CUDA Toolkit installation"; \
-fi
-
 WORKDIR ${APP_HOME}
 
 # Copy and install requirements
@@ -78,7 +67,6 @@ RUN if [ "$INSTALL_TYPE" = "all" ]; then \
             torchvision \
             torchaudio \
             scikit-learn \
-            nltk \
             transformers \
             tokenizers && \
         python -m nltk.downloader punkt stopwords && \
@@ -98,7 +86,7 @@ RUN pip install --no-cache-dir --upgrade pip && \
     python -c "import crawl4ai; print('✅ crawl4ai is ready to rock!')" && \
     python -c "from playwright.sync_api import sync_playwright; print('✅ Playwright is feeling dramatic!')"
 
-# Install Playwright browser
+# Install Playwright browser (Chromium for crawling)
 RUN playwright install --with-deps chromium
 
 # Expose the port Render will use
