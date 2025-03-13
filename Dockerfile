@@ -4,7 +4,8 @@ FROM python:3.10-slim
 ARG APP_HOME=/app
 ARG INSTALL_TYPE=default
 
-# Environment variables
+# Set environment variables (comment moved above to avoid parsing issues)
+# Render’s default port is 10000
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=random \
     PYTHONUNBUFFERED=1 \
@@ -13,7 +14,7 @@ ENV PYTHONFAULTHANDLER=1 \
     PIP_DISABLE_PIP_VERSION_CHECK=1 \
     PIP_DEFAULT_TIMEOUT=100 \
     DEBIAN_FRONTEND=noninteractive \
-    PORT=10000  # Render’s default port
+    PORT=10000
 
 LABEL maintainer="unclecode"
 LABEL description="🔥🕷️ Crawl4AI: Open-source LLM Friendly Web Crawler & scraper"
