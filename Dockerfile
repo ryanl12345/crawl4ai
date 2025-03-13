@@ -4,7 +4,7 @@ FROM python:3.10-slim
 ARG APP_HOME=/app
 ARG INSTALL_TYPE=default
 
-# Set environment variables (comment moved above to avoid parsing issues)
+# Set environment variables
 # Render’s default port is 10000
 ENV PYTHONFAULTHANDLER=1 \
     PYTHONHASHSEED=random \
@@ -29,7 +29,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libjpeg-dev \
     && rm -rf /var/lib/apt/lists/*
 
-# Install Playwright dependencies (required by playwright>=1.49.0)
+# Install Playwright dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     libglib2.0-0 \
     libnss3 \
@@ -62,7 +62,12 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy the project and install Crawl4AI
 COPY . /tmp/project/
-RUN if [ "$INSTALL_TYPE" = "all" ]; then \
+RUN ls -la /tmp/project/ && \  # Debug: Show copied files
+    ls -la /tmp/project/crawl4ai/ && \  # Debug: Show crawl4ai directory
+    pip install --no-cache-dir "/tmp/project/" && \
+    python -c "import crawl4ai; print('✅ crawl4ai version:', crawl4ai.__version__)" && \
+    python -c "import crawl4ai.server; print('✅ crawl4ai.server module found')" && \
+    if [ "$INSTALL_TYPE" = "all" ]; then \
         pip install --no-cache-dir \
             torch \
             torchvision \
@@ -78,20 +83,13 @@ RUN if [ "$INSTALL_TYPE" = "all" ]; then \
     elif [ "$INSTALL_TYPE" = "transformer" ]; then \
         pip install "/tmp/project/[transformer]" && \
         python -m crawl4ai.model_loader; \
-    else \
-        pip install "/tmp/project"; \
     fi
 
-# Upgrade pip and verify installation
-RUN pip install --no-cache-dir --upgrade pip && \
-    python -c "import crawl4ai; print('✅ crawl4ai is ready to rock!')" && \
-    python -c "from playwright.sync_api import sync_playwright; print('✅ Playwright is feeling dramatic!')"
-
-# Install Playwright browser (Chromium for crawling)
+# Install Playwright browser
 RUN playwright install --with-deps chromium
 
 # Expose the port Render will use
 EXPOSE ${PORT}
 
-# Start the Crawl4AI server, binding to 0.0.0.0 for Render
+# Start the Crawl4AI server
 CMD ["python", "-m", "crawl4ai.server", "--host", "0.0.0.0", "--port", "$PORT"]
