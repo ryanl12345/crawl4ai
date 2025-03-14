@@ -575,6 +575,8 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
                         url, wait_until=config.wait_until, timeout=config.page_timeout
                     )
                     redirected_url = page.url
+                    await page.wait_for_load_state('networkidle')  # Wait for full page load
+                    await page.wait_for_timeout(3000)              # Extra 3-second delay
                 except Error as e:
                     raise RuntimeError(f"Failed on navigating ACS-GOTO:\n{str(e)}")
 
