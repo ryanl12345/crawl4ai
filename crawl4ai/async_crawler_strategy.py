@@ -596,56 +596,52 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
 except Error as e:
     raise RuntimeError(f"Failed on navigating ACS-GOTO:\n{str(e)}")
 
-                await self.execute_hook(
-                    "after_goto", page, context=context, url=url, response=response, config=config
-                )
+await self.execute_hook(
+            "after_goto", page, context=context, url=url, response=response, config=config
+        )
 
-                if response is None:
-                    status_code = 200
-                    response_headers = {}
-                else:
-                    status_code = response.status
-                    response_headers = response.headers
+        if response is None:
+            status_code = 200
+            response_headers = {}
+        else:
+            status_code = response.status
+            response_headers = response.headers
 
-            else:
-                status_code = 200
-                response_headers = {}
+        # Wait for body element and visibility
+        try:
+            await page.wait_for_selector("body", state="attached", timeout=30000)
 
-            # Wait for body element and visibility
-            try:
-                await page.wait_for_selector("body", state="attached", timeout=30000)
+            # Use the new check_visibility function with csp_compliant_wait
+            is_visible = await self.csp_compliant_wait(
+                page,
+                """() => {
+                    const element = document.body;
+                    if (!element) return false;
+                    const style = window.getComputedStyle(element);
+                    const isVisible = style.display !== 'none' && 
+                                    style.visibility !== 'hidden' && 
+                                    style.opacity !== '0';
+                    return isVisible;
+                }""",
+                timeout=30000,
+            )
 
-                # Use the new check_visibility function with csp_compliant_wait
-                is_visible = await self.csp_compliant_wait(
-                    page,
-                    """() => {
-                        const element = document.body;
-                        if (!element) return false;
-                        const style = window.getComputedStyle(element);
-                        const isVisible = style.display !== 'none' && 
-                                        style.visibility !== 'hidden' && 
-                                        style.opacity !== '0';
-                        return isVisible;
-                    }""",
-                    timeout=30000,
-                )
-
-                if not is_visible and not config.ignore_body_visibility:
-                    visibility_info = await self.check_visibility(page)
-                    raise Error(f"Body element is hidden: {visibility_info}")
-
-            except Error:
+            if not is_visible and not config.ignore_body_visibility:
                 visibility_info = await self.check_visibility(page)
+                raise Error(f"Body element is hidden: {visibility_info}")
 
-                if self.config.verbose:
-                    self.logger.debug(
-                        message="Body visibility info: {info}",
-                        tag="DEBUG",
-                        params={"info": visibility_info},
-                    )
+        except Error:
+            visibility_info = await self.check_visibility(page)
 
-                if not config.ignore_body_visibility:
-                    raise Error(f"Body element is hidden: {visibility_info}")
+            if self.config.verbose:
+                self.logger.debug(
+                    message="Body visibility info: {info}",
+                    tag="DEBUG",
+                    params={"info": visibility_info},
+                )
+
+            if not config.ignore_body_visibility:
+                raise Error(f"Body element is hidden: {visibility_info}")
 
             # try:
             #     await page.wait_for_selector("body", state="attached", timeout=30000)
