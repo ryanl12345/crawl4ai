@@ -574,6 +574,7 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
                     response = await page.goto(
                         url, wait_until=config.wait_until, timeout=config.page_timeout
                     )
+                    raw_html = await page.content()  # Capture raw HTML before JS rendering
                     redirected_url = page.url
                     await page.wait_for_load_state('networkidle')  # Wait for full page load
                     await page.wait_for_timeout(3000)              # Extra 3-second delay
@@ -849,6 +850,7 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
             # Return complete response
             return AsyncCrawlResponse(
                 html=html,
+                raw_html=raw_html,  # Original HTML with <a href> tags
                 response_headers=response_headers,
                 js_execution_result=execution_result,
                 status_code=status_code,
