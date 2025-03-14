@@ -865,7 +865,7 @@ except Error as e:
             # Return complete response
             return AsyncCrawlResponse(
                 html=html,
-                raw_html=raw_html,  # Original HTML with <a href> tags
+                image_urls=image_urls,
                 response_headers=response_headers,
                 js_execution_result=execution_result,
                 status_code=status_code,
