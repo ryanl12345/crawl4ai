@@ -378,6 +378,7 @@ class AsyncWebCrawler:
                     )
 
                     html = sanitize_input_encode(async_response.html)
+                    image_urls = async_response.image_urls  # Extract pre-rendered image URLs
                     screenshot_data = async_response.screenshot
                     pdf_data = async_response.pdf_data
                     js_execution_result = async_response.js_execution_result
