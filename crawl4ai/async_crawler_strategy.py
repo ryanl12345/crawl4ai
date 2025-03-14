@@ -560,7 +560,7 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
             if not config.js_only:
                 await self.execute_hook("before_goto", page, context=context, url=url, config=config)
 
-               try:
+        try:
     # Generate a unique nonce for this request
     nonce = hashlib.sha256(os.urandom(32)).hexdigest()
 
