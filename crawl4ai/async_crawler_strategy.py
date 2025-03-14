@@ -596,7 +596,7 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
 except Error as e:
     raise RuntimeError(f"Failed on navigating ACS-GOTO:\n{str(e)}")
 
-await self.execute_hook(
+        await self.execute_hook(
             "after_goto", page, context=context, url=url, response=response, config=config
         )
 
