@@ -141,6 +141,7 @@ class DispatchResult(BaseModel):
 class CrawlResult(BaseModel):
     url: str
     html: str
+    image_urls: Optional[List[str]] = None
     success: bool
     cleaned_html: Optional[str] = None
     media: Dict[str, List[Dict]] = {}
