@@ -559,89 +559,84 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
             # Handle page navigation and content loading
             if not config.js_only:
                 await self.execute_hook("before_goto", page, context=context, url=url, config=config)
-
-        try:
-    # Generate a unique nonce for this request
-    nonce = hashlib.sha256(os.urandom(32)).hexdigest()
-
-    # Add CSP headers to the request
-    await page.set_extra_http_headers(
-        {
-            "Content-Security-Policy": f"default-src 'self'; script-src 'self' 'nonce-{nonce}' 'strict-dynamic'"
-        }
-    )
-
-    response = await page.goto(
-        url, wait_until=config.wait_until, timeout=config.page_timeout
-    )
-    # Safely extract <a href> URLs from the fotorama div, fallback to empty list if no fotorama
-    try:
-        image_urls = await page.evaluate(
-            """() => {
-                const fotorama = document.querySelector('.fotorama');
-                if (!fotorama) return [];
-                const links = fotorama.querySelectorAll('a[href]');
-                return Array.from(links).map(a => a.getAttribute('href'));
-            }"""
-        )
-    except Exception as e:
-        image_urls = []  # Fallback to empty list if extraction fails
-        self.logger.debug(
-            message=f"No Fotorama found or error extracting URLs: {str(e)}",
-            tag="DEBUG",
-        )
-    redirected_url = page.url
-    await page.wait_for_load_state('networkidle')  # Wait for full page load
-    await page.wait_for_timeout(3000)              # Extra 3-second delay
-except Error as e:
-    raise RuntimeError(f"Failed on navigating ACS-GOTO:\n{str(e)}")
-
-        await self.execute_hook(
-            "after_goto", page, context=context, url=url, response=response, config=config
-        )
-
-        if response is None:
-            status_code = 200
-            response_headers = {}
-        else:
-            status_code = response.status
-            response_headers = response.headers
-
-        # Wait for body element and visibility
-        try:
-            await page.wait_for_selector("body", state="attached", timeout=30000)
-
-            # Use the new check_visibility function with csp_compliant_wait
-            is_visible = await self.csp_compliant_wait(
-                page,
-                """() => {
-                    const element = document.body;
-                    if (!element) return false;
-                    const style = window.getComputedStyle(element);
-                    const isVisible = style.display !== 'none' && 
-                                    style.visibility !== 'hidden' && 
-                                    style.opacity !== '0';
-                    return isVisible;
-                }""",
-                timeout=30000,
-            )
-
-            if not is_visible and not config.ignore_body_visibility:
-                visibility_info = await self.check_visibility(page)
-                raise Error(f"Body element is hidden: {visibility_info}")
-
-        except Error:
-            visibility_info = await self.check_visibility(page)
-
-            if self.config.verbose:
-                self.logger.debug(
-                    message="Body visibility info: {info}",
-                    tag="DEBUG",
-                    params={"info": visibility_info},
+                try:  # Line 563
+                    # Generate a unique nonce for this request
+                    nonce = hashlib.sha256(os.urandom(32)).hexdigest()
+                    # Add CSP headers to the request
+                    await page.set_extra_http_headers(
+                        {
+                            "Content-Security-Policy": f"default-src 'self'; script-src 'self' 'nonce-{nonce}' 'strict-dynamic'"
+                        }
+                    )
+                    response = await page.goto(
+                        url, wait_until=config.wait_until, timeout=config.page_timeout
+                    )
+                    # Safely extract <a href> URLs from the fotorama div, fallback to empty list if no fotorama
+                    try:
+                        image_urls = await page.evaluate(
+                            """() => {
+                                const fotorama = document.querySelector('.fotorama');
+                                if (!fotorama) return [];
+                                const links = fotorama.querySelectorAll('a[href]');
+                                return Array.from(links).map(a => a.getAttribute('href'));
+                            }"""
+                        )
+                    except Exception as e:
+                        image_urls = []  # Fallback to empty list if extraction fails
+                        self.logger.debug(
+                            message=f"No Fotorama found or error extracting URLs: {str(e)}",
+                            tag="DEBUG",
+                        )
+                    redirected_url = page.url
+                    await page.wait_for_load_state('networkidle')  # Wait for full page load
+                    await page.wait_for_timeout(3000)              # Extra 3-second delay
+                except Error as e:
+                    raise RuntimeError(f"Failed on navigating ACS-GOTO:\n{str(e)}")
+                await self.execute_hook(
+                    "after_goto", page, context=context, url=url, response=response, config=config
                 )
+                if response is None:
+                    status_code = 200
+                    response_headers = {}
+                else:
+                    status_code = response.status
+                    response_headers = response.headers
 
-            if not config.ignore_body_visibility:
-                raise Error(f"Body element is hidden: {visibility_info}")
+                # Wait for body element and visibility
+                try:
+                    await page.wait_for_selector("body", state="attached", timeout=30000)
+
+                    # Use the new check_visibility function with csp_compliant_wait
+                    is_visible = await self.csp_compliant_wait(
+                        page,
+                        """() => {
+                            const element = document.body;
+                            if (!element) return false;
+                            const style = window.getComputedStyle(element);
+                            const isVisible = style.display !== 'none' && 
+                                            style.visibility !== 'hidden' && 
+                                            style.opacity !== '0';
+                            return isVisible;
+                        }""",
+                        timeout=30000,
+                    )
+
+                    if not is_visible and not config.ignore_body_visibility:
+                        visibility_info = await self.check_visibility(page)
+                        raise Error(f"Body element is hidden: {visibility_info}")
+
+                except Error:
+                    visibility_info = await self.check_visibility(page)
+
+                    if self.config.verbose:
+                        self.logger.debug(
+                            message="Body visibility info: {info}",
+                            tag="DEBUG",
+                            params={"info": visibility_info},
+                        )
+
+                    if not config.ignore_body_visibility:
+                        raise Error(f"Body element is hidden: {visibility_info}")
 
             # try:
             #     await page.wait_for_selector("body", state="attached", timeout=30000)
