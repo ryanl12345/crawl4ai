@@ -473,7 +473,7 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
                 "URL must start with 'http://', 'https://', 'file://', or 'raw:'"
             )
 
-    async def _crawl_web(
+   async def _crawl_web(
         self, url: str, config: CrawlerRunConfig
     ) -> AsyncCrawlResponse:
         """
@@ -504,8 +504,24 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
                 **(config.user_agent_generator_config or {})
             )
 
-        # Get page for session
-        page, context = await self.browser_manager.get_page(crawlerRunConfig=config)
+        # Get page for session with custom browser configuration
+        browser_config = {
+            "user_agent": self.browser_config.user_agent,
+            "headless": True,
+            "args": [
+                "--disable-blink-features=AutomationControlled",  # Hide automation flags
+                "--no-sandbox",  # Required for Render
+                "--disable-setuid-sandbox"
+            ],
+            "viewport": {"width": 1280, "height": 720},
+            "locale": "en-US"
+        }
+        # Add proxy support via environment variable (optional)
+        proxy = os.getenv("CRAWL4AI_PROXY", None)
+        if proxy:
+            browser_config["proxy"] = {"server": proxy}
+
+        page, context = await self.browser_manager.get_page(crawlerRunConfig=config, **browser_config)
 
         # Add default cookie
         await context.add_cookies(
@@ -569,7 +585,9 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
                         }
                     )
                     response = await page.goto(
-                        url, wait_until=config.wait_until, timeout=config.page_timeout
+                        url, 
+                        wait_until="domcontentloaded",  # Changed from config.wait_until to domcontentloaded
+                        timeout=60000  # Increased timeout to 60 seconds
                     )
                     # Safely extract <a href> URLs from the fotorama div, fallback to empty list if no fotorama
                     try:
@@ -588,7 +606,7 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
                             tag="DEBUG",
                         )
                     redirected_url = page.url
-                    await page.wait_for_load_state('networkidle')  # Wait for full page load
+                    await page.wait_for_load_state('domcontentloaded')  # Changed from networkidle to domcontentloaded
                     await page.wait_for_timeout(3000)              # Extra 3-second delay
                 except Error as e:
                     raise RuntimeError(f"Failed on navigating ACS-GOTO:\n{str(e)}")
