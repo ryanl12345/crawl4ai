@@ -473,9 +473,9 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
                 "URL must start with 'http://', 'https://', 'file://', or 'raw:'"
             )
 
-   async def _crawl_web(
+    async def _crawl_web(
         self, url: str, config: CrawlerRunConfig
-    ) -> AsyncCrawlResponse:
+        ) -> AsyncCrawlResponse:
         """
         Internal method to crawl web URLs with the specified configuration.
 
