@@ -521,7 +521,7 @@ class AsyncPlaywrightCrawlerStrategy(AsyncCrawlerStrategy):
         if proxy:
             browser_config["proxy"] = {"server": proxy}
 
-        page, context = await self.browser_manager.get_page(crawlerRunConfig=config, **browser_config)
+        page, context = await self.browser_manager.get_page(crawlerRunConfig=config)
 
         # Add default cookie
         await context.add_cookies(
